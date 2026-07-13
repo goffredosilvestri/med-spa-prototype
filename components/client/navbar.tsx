@@ -10,7 +10,7 @@ const LINKS = [
   { label: "Treatments", href: "#treatments" },
   { label: "Memberships", href: "#memberships" },
   { label: "Experience", href: "#experience" },
-  { label: "Journal", href: "#faq" },
+  { label: "FAQ", href: "#faq" },
 ]
 
 export function Navbar() {

@@ -2,17 +2,22 @@
 
 import { Dialog } from "@base-ui/react/dialog"
 import { useEffect, useMemo, useState, useTransition } from "react"
-import { Check, ChevronLeft, Loader2, MapPin, X } from "lucide-react"
+import { Check, ChevronLeft, Loader as Loader2, MapPin, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { BRANCHES, TIME_SLOTS, TREATMENTS, type Treatment } from "@/lib/constants"
+import { BRANCHES, TIME_SLOTS, TREATMENTS, PACKAGES, toBookableItem, toBookablePackage, type BookableItem } from "@/lib/constants"
 import { createBooking, getBookedSlots } from "@/app/actions/bookings"
 
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  initialTreatment: Treatment | null
+  initialItem: BookableItem | null
 }
+
+const ALL_ITEMS: BookableItem[] = [
+  ...TREATMENTS.map(toBookableItem),
+  ...PACKAGES.map(toBookablePackage),
+]
 
 function toISODate(d: Date) {
   const y = d.getFullYear()
@@ -48,10 +53,10 @@ function parseSlotToDate(dateISO: string, slot: string) {
 
 const STEPS = ["Treatment", "Date & Time", "Your details"]
 
-export function BookingDialog({ open, onOpenChange, initialTreatment }: Props) {
+export function BookingDialog({ open, onOpenChange, initialItem }: Props) {
   const dates = useMemo(() => buildDates(21), [])
   const [step, setStep] = useState(0)
-  const [treatmentId, setTreatmentId] = useState<string>("")
+  const [itemId, setItemId] = useState<string>("")
   const [branch, setBranch] = useState<string>("")
   const [dateISO, setDateISO] = useState<string>("")
   const [time, setTime] = useState<string>("")
@@ -65,13 +70,13 @@ export function BookingDialog({ open, onOpenChange, initialTreatment }: Props) {
   const [confirmed, setConfirmed] = useState(false)
   const [isPending, startTransition] = useTransition()
 
-  const treatment = TREATMENTS.find((t) => t.id === treatmentId) ?? null
+  const item = ALL_ITEMS.find((t) => t.id === itemId) ?? null
 
   // Reset when opened, applying any preselected treatment.
   useEffect(() => {
     if (open) {
       setStep(0)
-      setTreatmentId(initialTreatment?.id ?? "")
+      setItemId(initialItem?.id ?? "")
       setBranch("")
       setDateISO("")
       setTime("")
@@ -82,7 +87,7 @@ export function BookingDialog({ open, onOpenChange, initialTreatment }: Props) {
       setError("")
       setConfirmed(false)
     }
-  }, [open, initialTreatment])
+  }, [open, initialItem])
 
   // Fetch booked slots whenever branch + date are set.
   useEffect(() => {
@@ -104,7 +109,7 @@ export function BookingDialog({ open, onOpenChange, initialTreatment }: Props) {
     }
   }, [branch, dateISO])
 
-  const canContinueStep0 = treatmentId && branch
+  const canContinueStep0 = itemId && branch
   const canContinueStep1 = dateISO && time
   const canConfirm = fullName.trim() && email.trim() && phone.trim()
 
@@ -118,16 +123,16 @@ export function BookingDialog({ open, onOpenChange, initialTreatment }: Props) {
   }
 
   function handleConfirm() {
-    if (!treatment) return
+    if (!item) return
     setError("")
     startTransition(async () => {
       const res = await createBooking({
         fullName,
         email,
         phone,
-        treatment: treatment.name,
+        treatment: item.name,
         branch,
-        price: treatment.price,
+        price: item.price,
         bookingDate: dateISO,
         bookingTime: time,
         notes,
@@ -217,11 +222,11 @@ export function BookingDialog({ open, onOpenChange, initialTreatment }: Props) {
                 </div>
                 <h3 className="mt-5 font-serif text-2xl">Your appointment is requested</h3>
                 <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-                  A concierge will confirm your {treatment?.name} at our {branch} atelier shortly. A
+                  A concierge will confirm your {item?.name} at our {branch} atelier shortly. A
                   confirmation has been sent to {email}.
                 </p>
                 <div className="mt-6 w-full max-w-sm rounded-xl border border-border bg-muted/40 p-4 text-left text-sm">
-                  <Row label="Treatment" value={treatment?.name ?? ""} />
+                  <Row label="Service" value={item?.name ?? ""} />
                   <Row label="Location" value={branch} />
                   <Row label="Date" value={formatLong(dateISO)} />
                   <Row label="Time" value={time} />
@@ -236,22 +241,24 @@ export function BookingDialog({ open, onOpenChange, initialTreatment }: Props) {
             ) : step === 0 ? (
               <div className="flex flex-col gap-6">
                 <div>
-                  <p className="mb-3 text-sm font-medium">Choose your treatment</p>
+                  <p className="mb-3 text-sm font-medium">Choose your treatment or package</p>
                   <div className="grid gap-2.5 sm:grid-cols-2">
-                    {TREATMENTS.map((t) => (
+                    {ALL_ITEMS.map((t) => (
                       <button
                         key={t.id}
-                        onClick={() => setTreatmentId(t.id)}
+                        onClick={() => setItemId(t.id)}
                         className={cn(
                           "flex items-center justify-between rounded-xl border p-3.5 text-left transition-all duration-200",
-                          treatmentId === t.id
+                          itemId === t.id
                             ? "border-primary bg-primary/5 ring-1 ring-primary"
                             : "border-border hover:border-primary/40 hover:bg-muted/50",
                         )}
                       >
                         <span>
                           <span className="block text-sm font-medium">{t.name}</span>
-                          <span className="block text-xs text-muted-foreground">{t.duration}</span>
+                          <span className="block text-xs text-muted-foreground">
+                            {t.kind === "package" ? "Package" : t.duration}
+                          </span>
                         </span>
                         <span className="text-sm font-medium text-primary">${t.price}</span>
                       </button>
@@ -388,13 +395,13 @@ export function BookingDialog({ open, onOpenChange, initialTreatment }: Props) {
                   />
                 </Field>
                 <div className="mt-1 rounded-xl border border-border bg-muted/40 p-4 text-sm">
-                  <Row label="Treatment" value={treatment?.name ?? ""} />
+                  <Row label="Service" value={item?.name ?? ""} />
                   <Row label="Location" value={branch} />
                   <Row label="Date" value={formatLong(dateISO)} />
                   <Row label="Time" value={time} />
                   <div className="mt-2 flex items-center justify-between border-t border-border pt-2 font-medium">
                     <span>Total</span>
-                    <span className="text-primary">${treatment?.price ?? 0}</span>
+                    <span className="text-primary">${item?.price ?? 0}</span>
                   </div>
                 </div>
               </div>
@@ -425,7 +432,7 @@ export function BookingDialog({ open, onOpenChange, initialTreatment }: Props) {
                       <Loader2 className="size-4 animate-spin" /> Confirming
                     </>
                   ) : (
-                    `Confirm booking · $${treatment?.price ?? 0}`
+                    `Confirm booking · ${item?.price ?? 0}`
                   )}
                 </Button>
               )}

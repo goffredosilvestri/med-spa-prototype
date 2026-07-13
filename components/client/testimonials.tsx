@@ -4,19 +4,19 @@ const REVIEWS = [
   {
     quote:
       "The only place I trust with my skin. The results are natural, and the experience feels like a genuine escape from the city.",
-    name: "Isabella M.",
+    name: "Eleanor R.",
     detail: "Radiance member · Beverly Hills",
   },
   {
     quote:
       "From the consultation to the aftercare, every detail is considered. My complexion has never looked better.",
-    name: "Sophia C.",
+    name: "Marcus K.",
     detail: "Icon member · Manhattan",
   },
   {
     quote:
       "Clinical expertise without the clinical feeling. I leave glowing every single time and the concierge team is impeccable.",
-    name: "Olivia B.",
+    name: "Sophia T.",
     detail: "Radiance member · Miami",
   },
 ]

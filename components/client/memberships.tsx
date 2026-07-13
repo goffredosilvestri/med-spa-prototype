@@ -3,7 +3,7 @@
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { PACKAGES } from "@/lib/constants"
+import { PACKAGES, toBookablePackage } from "@/lib/constants"
 import { useBooking } from "@/components/booking/booking-provider"
 
 export function Memberships() {
@@ -74,7 +74,7 @@ export function Memberships() {
             </ul>
 
             <Button
-              onClick={() => openBooking()}
+              onClick={() => openBooking(toBookablePackage(p))}
               variant={p.featured ? "secondary" : "default"}
               className="mt-7 h-12 w-full rounded-full text-sm tracking-wide"
             >

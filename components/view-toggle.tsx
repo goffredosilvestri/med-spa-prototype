@@ -12,6 +12,7 @@ import { Memberships } from "@/components/client/memberships"
 import { Experience } from "@/components/client/experience"
 import { Testimonials } from "@/components/client/testimonials"
 import { FaqAccordion } from "@/components/client/faq-accordion"
+import { CtaSection } from "@/components/client/cta-section"
 import { Footer } from "@/components/client/footer"
 import { ChatConcierge } from "@/components/client/chat-concierge"
 import { BookingProvider } from "@/components/booking/booking-provider"
@@ -28,6 +29,7 @@ function ClientHomepage() {
         <Experience />
         <Testimonials />
         <FaqAccordion />
+        <CtaSection />
       </main>
       <Footer />
       <ChatConcierge />

@@ -9,6 +9,7 @@ import type { Booking } from "@/lib/types"
 
 type Props = {
   bookings: Booking[]
+  onStatusChange?: () => void
 }
 
 const STATUS_STYLES: Record<BookingStatus, string> = {
@@ -18,14 +19,15 @@ const STATUS_STYLES: Record<BookingStatus, string> = {
   cancelled: "bg-destructive/10 text-destructive border-destructive/20",
 }
 
-export function AppointmentTable({ bookings }: Props) {
-  const [isPending, startTransition] = useTransition()
+export function AppointmentTable({ bookings, onStatusChange }: Props) {
+  const [pendingId, startTransition] = useTransition()
 
   function cycleStatus(booking: Booking) {
     const currentIdx = BOOKING_STATUSES.indexOf(booking.status as BookingStatus)
     const next = BOOKING_STATUSES[(currentIdx + 1) % BOOKING_STATUSES.length]
     startTransition(async () => {
       await updateBookingStatus(booking.id, next)
+      onStatusChange?.()
     })
   }
 
@@ -79,13 +81,13 @@ export function AppointmentTable({ bookings }: Props) {
                 <td className="px-6 py-4">
                   <button
                     onClick={() => cycleStatus(b)}
-                    disabled={isPending}
+                    disabled={!!pendingId}
                     className={cn(
                       "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium capitalize transition-all hover:opacity-80",
                       STATUS_STYLES[b.status as BookingStatus] ?? STATUS_STYLES.pending,
                     )}
                   >
-                    {isPending && <Loader2 className="size-3 animate-spin" />}
+                    {pendingId === b.id && <Loader2 className="size-3 animate-spin" />}
                     {b.status}
                   </button>
                 </td>

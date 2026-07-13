@@ -136,5 +136,21 @@ export const TIME_SLOTS = [
   "9:00 PM",
 ]
 
+export type BookableItem = {
+  id: string
+  name: string
+  price: number
+  duration?: string
+  kind: "treatment" | "package"
+}
+
+export function toBookableItem(t: Treatment): BookableItem {
+  return { id: t.id, name: t.name, price: t.price, duration: t.duration, kind: "treatment" }
+}
+
+export function toBookablePackage(p: Package): BookableItem {
+  return { id: p.id, name: p.name, price: p.price, kind: "package" }
+}
+
 export const BOOKING_STATUSES = ["pending", "confirmed", "completed", "cancelled"] as const
 export type BookingStatus = (typeof BOOKING_STATUSES)[number]

@@ -2,8 +2,9 @@
 
 import Image from "next/image"
 import { Plus } from "lucide-react"
-import { TREATMENTS } from "@/lib/constants"
+import { TREATMENTS, toBookableItem } from "@/lib/constants"
 import { useBooking } from "@/components/booking/booking-provider"
+import { Reveal } from "@/components/ui/reveal"
 
 export function Treatments() {
   const { openBooking } = useBooking()
@@ -24,10 +25,11 @@ export function Treatments() {
       </div>
 
       <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {TREATMENTS.map((t) => (
+        {TREATMENTS.map((t, i) => (
+          <Reveal key={t.id} delay={i * 80}>
           <button
             key={t.id}
-            onClick={() => openBooking(t)}
+            onClick={() => openBooking(toBookableItem(t))}
             className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
           >
             <div className="relative aspect-4/3 overflow-hidden">
@@ -62,6 +64,7 @@ export function Treatments() {
               </div>
             </div>
           </button>
+          </Reveal>
         ))}
       </div>
     </section>

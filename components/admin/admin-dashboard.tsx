@@ -66,7 +66,7 @@ export function AdminDashboard() {
         ) : (
           <>
             <AnalyticsOverview bookings={bookings} subscribers={subscribers} />
-            <AppointmentTable bookings={bookings} />
+            <AppointmentTable bookings={bookings} onStatusChange={load} />
             <LeadList subscribers={subscribers} />
           </>
         )}

@@ -1,13 +1,13 @@
 "use client"
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react"
-import type { Treatment } from "@/lib/constants"
+import type { BookableItem } from "@/lib/constants"
 import { BookingDialog } from "./booking-dialog"
 
 type BookingContextValue = {
   open: boolean
-  treatment: Treatment | null
-  openBooking: (treatment?: Treatment | null) => void
+  item: BookableItem | null
+  openBooking: (item?: BookableItem | null) => void
   closeBooking: () => void
 }
 
@@ -21,24 +21,24 @@ export function useBooking() {
 
 export function BookingProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
-  const [treatment, setTreatment] = useState<Treatment | null>(null)
+  const [item, setItem] = useState<BookableItem | null>(null)
 
-  const openBooking = useCallback((t?: Treatment | null) => {
-    setTreatment(t ?? null)
+  const openBooking = useCallback((i?: BookableItem | null) => {
+    setItem(i ?? null)
     setOpen(true)
   }, [])
 
   const closeBooking = useCallback(() => setOpen(false), [])
 
   const value = useMemo(
-    () => ({ open, treatment, openBooking, closeBooking }),
-    [open, treatment, openBooking, closeBooking],
+    () => ({ open, item, openBooking, closeBooking }),
+    [open, item, openBooking, closeBooking],
   )
 
   return (
     <BookingContext.Provider value={value}>
       {children}
-      <BookingDialog open={open} onOpenChange={setOpen} initialTreatment={treatment} />
+      <BookingDialog open={open} onOpenChange={setOpen} initialItem={item} />
     </BookingContext.Provider>
   )
 }
