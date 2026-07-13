@@ -1,7 +1,7 @@
 "use client"
 
 import { useTransition } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader as Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { updateBookingStatus } from "@/app/actions/bookings"
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/constants"

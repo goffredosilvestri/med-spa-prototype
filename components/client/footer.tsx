@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { ArrowRight, Check, Loader2 } from "lucide-react"
+import { ArrowRight, Check, Loader as Loader2 } from "lucide-react"
 
 import { subscribe } from "@/app/actions/subscribers"
 
