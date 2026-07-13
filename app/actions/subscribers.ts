@@ -1,8 +1,6 @@
 "use server"
 
-import { db } from "@/lib/db"
-import { subscribers } from "@/lib/db/schema"
-import { desc } from "drizzle-orm"
+import { supabase } from "@/lib/supabase"
 import { revalidatePath } from "next/cache"
 
 export type SubscribeResult = { ok: true } | { ok: false; error: string }
@@ -11,15 +9,24 @@ export async function subscribe(email: string, source = "footer"): Promise<Subsc
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   if (!emailValid) return { ok: false, error: "Please enter a valid email address." }
 
-  try {
-    await db.insert(subscribers).values({ email: email.toLowerCase(), source }).onConflictDoNothing()
-    revalidatePath("/")
-    return { ok: true }
-  } catch {
+  const { error } = await supabase
+    .from("subscribers")
+    .insert({ email: email.toLowerCase(), source })
+
+  if (error) {
+    if (error.code === "23505") return { ok: true }
     return { ok: false, error: "Something went wrong. Please try again." }
   }
+
+  revalidatePath("/")
+  return { ok: true }
 }
 
 export async function getSubscribers() {
-  return db.select().from(subscribers).orderBy(desc(subscribers.createdAt))
+  const { data, error } = await supabase
+    .from("subscribers")
+    .select("*")
+    .order("created_at", { ascending: false })
+  if (error) return []
+  return data ?? []
 }

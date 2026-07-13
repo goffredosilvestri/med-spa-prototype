@@ -1,8 +1,6 @@
 "use server"
 
-import { db } from "@/lib/db"
-import { bookings } from "@/lib/db/schema"
-import { and, desc, eq } from "drizzle-orm"
+import { supabase } from "@/lib/supabase"
 import { revalidatePath } from "next/cache"
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/constants"
 
@@ -22,16 +20,13 @@ export type ActionResult = { ok: true; id: number } | { ok: false; error: string
 
 export async function getBookedSlots(branch: string, bookingDate: string): Promise<string[]> {
   if (!branch || !bookingDate) return []
-  const rows = await db
-    .select({ bookingTime: bookings.bookingTime })
-    .from(bookings)
-    .where(
-      and(
-        eq(bookings.branch, branch),
-        eq(bookings.bookingDate, bookingDate),
-      ),
-    )
-  return rows.map((r) => r.bookingTime)
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("booking_time")
+    .eq("branch", branch)
+    .eq("booking_date", bookingDate)
+  if (error) return []
+  return (data ?? []).map((r) => r.booking_time as string)
 }
 
 export async function createBooking(input: CreateBookingInput): Promise<ActionResult> {
@@ -44,41 +39,49 @@ export async function createBooking(input: CreateBookingInput): Promise<ActionRe
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   if (!emailValid) return { ok: false, error: "Please enter a valid email address." }
 
-  // Prevent double-booking the same slot at the same branch.
   const taken = await getBookedSlots(branch, bookingDate)
   if (taken.includes(bookingTime)) {
     return { ok: false, error: "That time was just reserved. Please choose another slot." }
   }
 
-  const [row] = await db
-    .insert(bookings)
-    .values({
-      fullName,
+  const { data, error } = await supabase
+    .from("bookings")
+    .insert({
+      full_name: fullName,
       email,
       phone,
       treatment,
       branch,
       price: input.price,
-      bookingDate,
-      bookingTime,
+      booking_date: bookingDate,
+      booking_time: bookingTime,
       notes: input.notes ?? null,
       status: "pending",
     })
-    .returning({ id: bookings.id })
+    .select("id")
+    .single()
+
+  if (error) return { ok: false, error: "Something went wrong. Please try again." }
 
   revalidatePath("/")
-  return { ok: true, id: row.id }
+  return { ok: true, id: data.id }
 }
 
 export async function updateBookingStatus(id: number, status: BookingStatus): Promise<ActionResult> {
   if (!BOOKING_STATUSES.includes(status)) {
     return { ok: false, error: "Invalid status." }
   }
-  await db.update(bookings).set({ status }).where(eq(bookings.id, id))
+  const { error } = await supabase.from("bookings").update({ status }).eq("id", id)
+  if (error) return { ok: false, error: "Failed to update status." }
   revalidatePath("/")
   return { ok: true, id }
 }
 
 export async function getBookings() {
-  return db.select().from(bookings).orderBy(desc(bookings.createdAt))
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("*")
+    .order("created_at", { ascending: false })
+  if (error) return []
+  return data ?? []
 }
