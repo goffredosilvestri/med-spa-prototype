@@ -9,12 +9,9 @@ type Props = {
 }
 
 const TREATMENT_NAMES = [
-  "HydraFacial Signature",
-  "Botox & Fillers",
-  "Laser Skin Resurfacing",
-  "Microneedling RF",
-  "IV Wellness Drip",
-  "Signature Chemical Peel",
+  "Smooth & Tighten",
+  "Brighten & Hydrate",
+  "Sculpt & Contour",
 ]
 
 export function AnalyticsOverview({ bookings, subscribers }: Props) {

@@ -3,7 +3,7 @@
 import { useTransition } from "react"
 import { Loader as Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { updateBookingStatus } from "@/app/actions/bookings"
+import { updateBookingStatus } from "@/lib/api"
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/constants"
 import type { Booking } from "@/lib/types"
 
@@ -20,7 +20,7 @@ const STATUS_STYLES: Record<BookingStatus, string> = {
 }
 
 export function AppointmentTable({ bookings, onStatusChange }: Props) {
-  const [pendingId, startTransition] = useTransition()
+  const [isPending, startTransition] = useTransition()
 
   function cycleStatus(booking: Booking) {
     const currentIdx = BOOKING_STATUSES.indexOf(booking.status as BookingStatus)
@@ -81,13 +81,13 @@ export function AppointmentTable({ bookings, onStatusChange }: Props) {
                 <td className="px-6 py-4">
                   <button
                     onClick={() => cycleStatus(b)}
-                    disabled={!!pendingId}
+                    disabled={isPending}
                     className={cn(
                       "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium capitalize transition-all hover:opacity-80",
                       STATUS_STYLES[b.status as BookingStatus] ?? STATUS_STYLES.pending,
                     )}
                   >
-                    {pendingId === b.id && <Loader2 className="size-3 animate-spin" />}
+                    {isPending && <Loader2 className="size-3 animate-spin" />}
                     {b.status}
                   </button>
                 </td>

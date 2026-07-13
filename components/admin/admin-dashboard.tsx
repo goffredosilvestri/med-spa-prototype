@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button"
 import { AnalyticsOverview } from "./analytics-overview"
 import { AppointmentTable } from "./appointment-table"
 import { LeadList } from "./lead-list"
-import { getBookings } from "@/app/actions/bookings"
-import { getSubscribers } from "@/app/actions/subscribers"
+import { getBookings, getSubscribers, onDataChange } from "@/lib/api"
 import type { Booking, Subscriber } from "@/lib/types"
 
 export function AdminDashboard() {
@@ -25,6 +24,11 @@ export function AdminDashboard() {
 
   useEffect(() => {
     load()
+  }, [])
+
+  // Auto-refresh when data changes (e.g. new booking from client view)
+  useEffect(() => {
+    return onDataChange(() => load())
   }, [])
 
   return (

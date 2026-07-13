@@ -6,7 +6,7 @@ import { Check, ChevronLeft, Loader as Loader2, MapPin, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { BRANCHES, TIME_SLOTS, TREATMENTS, PACKAGES, toBookableItem, toBookablePackage, type BookableItem } from "@/lib/constants"
-import { createBooking, getBookedSlots } from "@/app/actions/bookings"
+import { createBooking, getBookedSlots } from "@/lib/api"
 
 type Props = {
   open: boolean
@@ -39,7 +39,6 @@ function buildDates(count: number) {
 }
 
 function parseSlotToDate(dateISO: string, slot: string) {
-  // slot like "10:00 AM"
   const [time, meridiem] = slot.split(" ")
   const [hStr, mStr] = time.split(":")
   let h = Number(hStr)
@@ -142,7 +141,6 @@ export function BookingDialog({ open, onOpenChange, initialItem }: Props) {
       } else {
         setError(res.error)
         if (res.error.toLowerCase().includes("reserved")) {
-          // refresh slots so the user sees the conflict
           const slots = await getBookedSlots(branch, dateISO)
           setBookedSlots(slots)
           setStep(1)
@@ -345,7 +343,7 @@ export function BookingDialog({ open, onOpenChange, initialItem }: Props) {
                                 ? "border-primary bg-primary text-primary-foreground"
                                 : "border-border hover:border-primary/40 hover:bg-muted/50",
                               disabled &&
-                                "cursor-not-allowed border-transparent bg-muted/40 text-muted-foreground/40 line-through hover:border-transparent hover:bg-muted/40",
+                              "cursor-not-allowed border-transparent bg-muted/40 text-muted-foreground/40 line-through hover:border-transparent hover:bg-muted/40",
                             )}
                           >
                             {slot}
@@ -432,7 +430,7 @@ export function BookingDialog({ open, onOpenChange, initialItem }: Props) {
                       <Loader2 className="size-4 animate-spin" /> Confirming
                     </>
                   ) : (
-                    `Confirm booking · ${item?.price ?? 0}`
+                    `Confirm booking · $${item?.price ?? 0}`
                   )}
                 </Button>
               )}
