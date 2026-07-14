@@ -1,6 +1,6 @@
 "use server"
 
-import { supabase } from "@/lib/supabase"
+import { getSupabase } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 
 export type SubscribeResult = { ok: true } | { ok: false; error: string }
@@ -9,6 +9,7 @@ export async function subscribe(email: string, source = "footer"): Promise<Subsc
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   if (!emailValid) return { ok: false, error: "Please enter a valid email address." }
 
+  const supabase = getSupabase()
   const { error } = await supabase
     .from("subscribers")
     .insert({ email: email.toLowerCase(), source })
@@ -23,6 +24,7 @@ export async function subscribe(email: string, source = "footer"): Promise<Subsc
 }
 
 export async function getSubscribers() {
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from("subscribers")
     .select("*")

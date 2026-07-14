@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { LayoutDashboard, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AnalyticsOverview } from "./analytics-overview"
 import { AppointmentTable } from "./appointment-table"
 import { LeadList } from "./lead-list"
-import { getBookings, getSubscribers, onDataChange } from "@/lib/api"
+import { getBookings } from "@/app/actions/bookings"
+import { getSubscribers } from "@/app/actions/subscribers"
 import type { Booking, Subscriber } from "@/lib/types"
 
 export function AdminDashboard() {
@@ -14,22 +15,28 @@ export function AdminDashboard() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([])
   const [loading, setLoading] = useState(true)
 
-  async function load() {
-    setLoading(true)
-    const [b, s] = await Promise.all([getBookings(), getSubscribers()])
-    setBookings(b as Booking[])
-    setSubscribers(s as Subscriber[])
-    setLoading(false)
-  }
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
+    try {
+      const [b, s] = await Promise.all([getBookings(), getSubscribers()])
+      setBookings(b as Booking[])
+      setSubscribers(s as Subscriber[])
+    } catch {
+      // Supabase not configured yet — show empty state
+    } finally {
+      if (!silent) setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     load()
-  }, [])
+  }, [load])
 
-  // Auto-refresh when data changes (e.g. new booking from client view)
+  // Poll for new bookings while admin view is open
   useEffect(() => {
-    return onDataChange(() => load())
-  }, [])
+    const interval = setInterval(() => load(true), 30_000)
+    return () => clearInterval(interval)
+  }, [load])
 
   return (
     <div className="min-h-screen bg-background">
@@ -45,7 +52,7 @@ export function AdminDashboard() {
             </div>
           </div>
           <Button
-            onClick={load}
+            onClick={() => load()}
             variant="outline"
             disabled={loading}
             className="rounded-full"
@@ -70,7 +77,7 @@ export function AdminDashboard() {
         ) : (
           <>
             <AnalyticsOverview bookings={bookings} subscribers={subscribers} />
-            <AppointmentTable bookings={bookings} onStatusChange={load} />
+            <AppointmentTable bookings={bookings} onStatusChange={() => load(true)} />
             <LeadList subscribers={subscribers} />
           </>
         )}

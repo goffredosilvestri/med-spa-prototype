@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { ArrowRight, Check, Loader as Loader2 } from "lucide-react"
 
-import { subscribe } from "@/lib/api"
+import { subscribe } from "@/app/actions/subscribers"
 
 export function Footer() {
   const [email, setEmail] = useState("")
@@ -16,11 +16,15 @@ export function Footer() {
     if (!email.trim()) return
     setError("")
     startTransition(async () => {
-      const res = await subscribe(email, "footer")
-      if (res.ok) {
-        setDone(true)
-      } else {
-        setError(res.error)
+      try {
+        const res = await subscribe(email, "footer")
+        if (res.ok) {
+          setDone(true)
+        } else {
+          setError(res.error)
+        }
+      } catch {
+        setError("Newsletter signup is unavailable. Check Supabase configuration in .env.local.")
       }
     })
   }

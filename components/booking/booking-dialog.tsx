@@ -9,7 +9,7 @@ import { Check, ChevronLeft, Loader as Loader2, MapPin, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { BRANCHES, TIME_SLOTS, TREATMENTS, PACKAGES, toBookableItem, toBookablePackage, type BookableItem } from "@/lib/constants"
-import { createBooking, getBookedSlots } from "@/lib/api"
+import { createBooking, getBookedSlots } from "@/app/actions/bookings"
 
 type Props = {
   open: boolean
@@ -129,27 +129,31 @@ export function BookingDialog({ open, onOpenChange, initialItem }: Props) {
     if (!item) return
     setError("")
     startTransition(async () => {
-      const res = await createBooking({
-        fullName,
-        email,
-        phone,
-        treatment: item.name,
-        branch,
-        price: item.price,
-        bookingDate: dateISO,
-        bookingTime: time,
-        notes,
-      })
-      if (res.ok) {
-        setConfirmed(true)
-      } else {
-        setError(res.error)
-        if (res.error.toLowerCase().includes("reserved")) {
-          const slots = await getBookedSlots(branch, dateISO)
-          setBookedSlots(slots)
-          setStep(1)
-          setTime("")
+      try {
+        const res = await createBooking({
+          fullName,
+          email,
+          phone,
+          treatment: item.name,
+          branch,
+          price: item.price,
+          bookingDate: dateISO,
+          bookingTime: time,
+          notes,
+        })
+        if (res.ok) {
+          setConfirmed(true)
+        } else {
+          setError(res.error)
+          if (res.error.toLowerCase().includes("reserved")) {
+            const slots = await getBookedSlots(branch, dateISO)
+            setBookedSlots(slots)
+            setStep(1)
+            setTime("")
+          }
         }
+      } catch {
+        setError("Booking service is unavailable. Check Supabase configuration in .env.local.")
       }
     })
   }

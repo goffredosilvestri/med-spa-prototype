@@ -1,6 +1,6 @@
 "use server"
 
-import { supabase } from "@/lib/supabase"
+import { getSupabase } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/constants"
 
@@ -20,11 +20,13 @@ export type ActionResult = { ok: true; id: number } | { ok: false; error: string
 
 export async function getBookedSlots(branch: string, bookingDate: string): Promise<string[]> {
   if (!branch || !bookingDate) return []
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from("bookings")
     .select("booking_time")
     .eq("branch", branch)
     .eq("booking_date", bookingDate)
+    .neq("status", "cancelled")
   if (error) return []
   return (data ?? []).map((r) => r.booking_time as string)
 }
@@ -44,6 +46,7 @@ export async function createBooking(input: CreateBookingInput): Promise<ActionRe
     return { ok: false, error: "That time was just reserved. Please choose another slot." }
   }
 
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from("bookings")
     .insert({
@@ -61,7 +64,12 @@ export async function createBooking(input: CreateBookingInput): Promise<ActionRe
     .select("id")
     .single()
 
-  if (error) return { ok: false, error: "Something went wrong. Please try again." }
+  if (error) {
+    if (error.code === "23505") {
+      return { ok: false, error: "That time was just reserved. Please choose another slot." }
+    }
+    return { ok: false, error: "Something went wrong. Please try again." }
+  }
 
   revalidatePath("/")
   return { ok: true, id: data.id }
@@ -71,6 +79,7 @@ export async function updateBookingStatus(id: number, status: BookingStatus): Pr
   if (!BOOKING_STATUSES.includes(status)) {
     return { ok: false, error: "Invalid status." }
   }
+  const supabase = getSupabase()
   const { error } = await supabase.from("bookings").update({ status }).eq("id", id)
   if (error) return { ok: false, error: "Failed to update status." }
   revalidatePath("/")
@@ -78,6 +87,7 @@ export async function updateBookingStatus(id: number, status: BookingStatus): Pr
 }
 
 export async function getBookings() {
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from("bookings")
     .select("*")

@@ -10,15 +10,15 @@ This document outlines the strategic upgrade path to transition the Med Spa appl
 ### A. Database & ORM Integration
 - [ ] Initialize Supabase project and configure environment variables.
 - [ ] Install and configure an ORM (e.g., Prisma or Drizzle) for type-safe database access.
-- [ ] Design and map relational database schemas (Tables: `Users`, `Treatments_Catalog`, `Bookings`, `Newsletter_Leads`, `Branches`).
-- [ ] Generate initial migrations and push the schema to the Supabase PostgreSQL database.
+- [x] Design and map relational database schemas (Tables: `Users`, `Treatments_Catalog`, `Bookings`, `Newsletter_Leads`, `Branches`).
+- [x] Generate initial migrations and push the schema to the Supabase PostgreSQL database.
 
 ### B. Next.js Server Actions Migration
-- [ ] Create `app/actions/` directory for secure server-side logic files.
-- [ ] Rewrite the mock `createBooking` function into a secure Server Action (`'use server'`).
-- [ ] Rewrite the mock `subscribe` function (newsletter) into a secure Server Action.
-- [ ] Update frontend components (`AdminDashboard`, `BookingDialog`) to fetch and mutate data via Server Actions instead of the client-side `lib/api.ts`.
-- [ ] Delete or deprecate the `localStorage` mock logic in `lib/api.ts`.
+- [x] Create `app/actions/` directory for secure server-side logic files.
+- [x] Rewrite the mock `createBooking` function into a secure Server Action (`'use server'`).
+- [x] Rewrite the mock `subscribe` function (newsletter) into a secure Server Action.
+- [x] Update frontend components (`AdminDashboard`, `BookingDialog`) to fetch and mutate data via Server Actions instead of the client-side `lib/api.ts`.
+- [x] Delete or deprecate the `localStorage` mock logic in `lib/api.ts`.
 
 ### C. Authentication & Authorization Guardrails
 - [ ] Install and configure Supabase Auth (or NextAuth.js).

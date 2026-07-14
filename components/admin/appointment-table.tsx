@@ -3,7 +3,7 @@
 import { useTransition } from "react"
 import { Loader as Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { updateBookingStatus } from "@/lib/api"
+import { updateBookingStatus } from "@/app/actions/bookings"
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/constants"
 import type { Booking } from "@/lib/types"
 
@@ -36,7 +36,7 @@ export function AppointmentTable({ bookings, onStatusChange }: Props) {
       <div className="glass rounded-2xl border border-border/60 p-12 text-center">
         <p className="font-serif text-xl">No appointments yet</p>
         <p className="mt-2 text-sm text-muted-foreground">
-          Bookings from the client homepage will appear here in real time.
+          Bookings from the client homepage will appear here. Use Refresh to load the latest.
         </p>
       </div>
     )
