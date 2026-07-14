@@ -2,6 +2,9 @@
 
 import { Dialog } from "@base-ui/react/dialog"
 import { useEffect, useMemo, useState, useTransition } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { toZonedTime, fromZonedTime, formatInTimeZone } from "date-fns-tz"
+import { addDays, parse, startOfDay } from "date-fns"
 import { Check, ChevronLeft, Loader as Loader2, MapPin, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -19,21 +22,17 @@ const ALL_ITEMS: BookableItem[] = [
   ...PACKAGES.map(toBookablePackage),
 ]
 
+const CLINIC_TZ = "America/New_York"
+
 function toISODate(d: Date) {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, "0")
-  const day = String(d.getDate()).padStart(2, "0")
-  return `${y}-${m}-${day}`
+  return formatInTimeZone(d, CLINIC_TZ, "yyyy-MM-dd")
 }
 
 function buildDates(count: number) {
   const out: Date[] = []
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const todayClinic = startOfDay(toZonedTime(new Date(), CLINIC_TZ))
   for (let i = 0; i < count; i++) {
-    const d = new Date(today)
-    d.setDate(today.getDate() + i)
-    out.push(d)
+    out.push(addDays(todayClinic, i))
   }
   return out
 }
@@ -45,9 +44,14 @@ function parseSlotToDate(dateISO: string, slot: string) {
   const m = Number(mStr)
   if (meridiem === "PM" && h !== 12) h += 12
   if (meridiem === "AM" && h === 12) h = 0
+
+  // Create a date in local browser time for parsing
   const d = new Date(`${dateISO}T00:00:00`)
   d.setHours(h, m, 0, 0)
-  return d
+
+  // Construct the string "YYYY-MM-DD HH:mm:ss"
+  const formatted = `${dateISO} ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`
+  return fromZonedTime(formatted, CLINIC_TZ)
 }
 
 const STEPS = ["Treatment", "Date & Time", "Your details"]
@@ -212,200 +216,211 @@ export function BookingDialog({ open, onOpenChange, initialItem }: Props) {
           )}
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            {confirmed ? (
-              <div className="flex flex-col items-center py-6 text-center">
-                <div className="grid size-16 place-items-center rounded-full bg-primary/10 text-primary">
-                  <Check className="size-8" />
-                </div>
-                <h3 className="mt-5 font-serif text-2xl">Your appointment is requested</h3>
-                <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-                  A concierge will confirm your {item?.name} at our {branch} atelier shortly. A
-                  confirmation has been sent to {email}.
-                </p>
-                <div className="mt-6 w-full max-w-sm rounded-xl border border-border bg-muted/40 p-4 text-left text-sm">
-                  <Row label="Service" value={item?.name ?? ""} />
-                  <Row label="Location" value={branch} />
-                  <Row label="Date" value={formatLong(dateISO)} />
-                  <Row label="Time" value={time} />
-                </div>
-                <Button
-                  onClick={() => onOpenChange(false)}
-                  className="mt-6 h-11 rounded-full px-8"
-                >
-                  Done
-                </Button>
-              </div>
-            ) : step === 0 ? (
-              <div className="flex flex-col gap-6">
-                <div>
-                  <p className="mb-3 text-sm font-medium">Choose your treatment or package</p>
-                  <div className="grid gap-2.5 sm:grid-cols-2">
-                    {ALL_ITEMS.map((t) => (
-                      <button
-                        key={t.id}
-                        onClick={() => setItemId(t.id)}
-                        className={cn(
-                          "flex items-center justify-between rounded-xl border p-3.5 text-left transition-all duration-200",
-                          itemId === t.id
-                            ? "border-primary bg-primary/5 ring-1 ring-primary"
-                            : "border-border hover:border-primary/40 hover:bg-muted/50",
-                        )}
-                      >
-                        <span>
-                          <span className="block text-sm font-medium">{t.name}</span>
-                          <span className="block text-xs text-muted-foreground">
-                            {t.kind === "package" ? "Package" : t.duration}
-                          </span>
-                        </span>
-                        <span className="text-sm font-medium text-primary">${t.price}</span>
-                      </button>
-                    ))}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-6">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={confirmed ? "confirmed" : step}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                className="h-full"
+              >
+                {confirmed ? (
+                  <div className="flex flex-col items-center py-6 text-center">
+                    <div className="grid size-16 place-items-center rounded-full bg-primary/10 text-primary">
+                      <Check className="size-8" />
+                    </div>
+                    <h3 className="mt-5 font-serif text-2xl">Your appointment is requested</h3>
+                    <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                      A concierge will confirm your {item?.name} at our {branch} atelier shortly. A
+                      confirmation has been sent to {email}.
+                    </p>
+                    <div className="mt-6 w-full max-w-sm rounded-xl border border-border bg-muted/40 p-4 text-left text-sm">
+                      <Row label="Service" value={item?.name ?? ""} />
+                      <Row label="Location" value={branch} />
+                      <Row label="Date" value={formatLong(dateISO)} />
+                      <Row label="Time" value={time} />
+                    </div>
+                    <Button
+                      onClick={() => onOpenChange(false)}
+                      className="mt-6 h-11 rounded-full px-8"
+                    >
+                      Done
+                    </Button>
                   </div>
-                </div>
-                <div>
-                  <p className="mb-3 text-sm font-medium">Select a location</p>
-                  <div className="grid gap-2.5 sm:grid-cols-3">
-                    {BRANCHES.map((b) => (
-                      <button
-                        key={b}
-                        onClick={() => setBranch(b)}
-                        className={cn(
-                          "flex items-center gap-2 rounded-xl border p-3.5 text-left text-sm transition-all duration-200",
-                          branch === b
-                            ? "border-primary bg-primary/5 ring-1 ring-primary"
-                            : "border-border hover:border-primary/40 hover:bg-muted/50",
-                        )}
-                      >
-                        <MapPin className="size-4 text-primary" />
-                        {b}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : step === 1 ? (
-              <div className="flex flex-col gap-6">
-                <div>
-                  <p className="mb-3 text-sm font-medium">Select a date</p>
-                  <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2">
-                    {dates.map((d) => {
-                      const iso = toISODate(d)
-                      const active = iso === dateISO
-                      return (
-                        <button
-                          key={iso}
-                          onClick={() => {
-                            setDateISO(iso)
-                            setTime("")
-                          }}
-                          className={cn(
-                            "flex min-w-15 shrink-0 flex-col items-center rounded-xl border px-3 py-2.5 transition-all duration-200",
-                            active
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "border-border hover:border-primary/40 hover:bg-muted/50",
-                          )}
-                        >
-                          <span className="text-[0.65rem] tracking-wide uppercase opacity-80">
-                            {d.toLocaleDateString("en-US", { weekday: "short" })}
-                          </span>
-                          <span className="text-lg font-medium leading-tight">{d.getDate()}</span>
-                          <span className="text-[0.65rem] opacity-80">
-                            {d.toLocaleDateString("en-US", { month: "short" })}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-                <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <p className="text-sm font-medium">Available times</p>
-                    {loadingSlots && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
-                  </div>
-                  {!dateISO ? (
-                    <p className="text-sm text-muted-foreground">Please select a date first.</p>
-                  ) : (
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                      {TIME_SLOTS.map((slot) => {
-                        const taken = bookedSlots.includes(slot)
-                        const past = parseSlotToDate(dateISO, slot).getTime() < now.getTime()
-                        const disabled = taken || past
-                        const active = time === slot
-                        return (
+                ) : step === 0 ? (
+                  <div className="flex flex-col gap-6">
+                    <div>
+                      <p className="mb-3 text-sm font-medium">Choose your treatment or package</p>
+                      <div className="grid gap-2.5 sm:grid-cols-2">
+                        {ALL_ITEMS.map((t) => (
                           <button
-                            key={slot}
-                            disabled={disabled}
-                            onClick={() => setTime(slot)}
+                            key={t.id}
+                            onClick={() => setItemId(t.id)}
                             className={cn(
-                              "rounded-lg border py-2.5 text-sm transition-all duration-200",
-                              active
-                                ? "border-primary bg-primary text-primary-foreground"
+                              "flex items-center justify-between rounded-xl border p-3.5 text-left transition-all duration-200",
+                              itemId === t.id
+                                ? "border-primary bg-primary/5 ring-1 ring-primary"
                                 : "border-border hover:border-primary/40 hover:bg-muted/50",
-                              disabled &&
-                              "cursor-not-allowed border-transparent bg-muted/40 text-muted-foreground/40 line-through hover:border-transparent hover:bg-muted/40",
                             )}
                           >
-                            {slot}
+                            <span>
+                              <span className="block text-sm font-medium">{t.name}</span>
+                              <span className="block text-xs text-muted-foreground">
+                                {t.kind === "package" ? "Package" : t.duration}
+                              </span>
+                            </span>
+                            <span className="text-sm font-medium text-primary">${t.price}</span>
                           </button>
-                        )
-                      })}
+                        ))}
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4">
-                <Field label="Full name">
-                  <input
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Isabella Moreau"
-                    className="input-luxe"
-                  />
-                </Field>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Email">
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@email.com"
-                      className="input-luxe"
-                    />
-                  </Field>
-                  <Field label="Phone">
-                    <input
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+1 (555) 000-0000"
-                      className="input-luxe"
-                    />
-                  </Field>
-                </div>
-                <Field label="Notes (optional)">
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows={3}
-                    placeholder="Anything we should know before your visit?"
-                    className="input-luxe resize-none"
-                  />
-                </Field>
-                <div className="mt-1 rounded-xl border border-border bg-muted/40 p-4 text-sm">
-                  <Row label="Service" value={item?.name ?? ""} />
-                  <Row label="Location" value={branch} />
-                  <Row label="Date" value={formatLong(dateISO)} />
-                  <Row label="Time" value={time} />
-                  <div className="mt-2 flex items-center justify-between border-t border-border pt-2 font-medium">
-                    <span>Total</span>
-                    <span className="text-primary">${item?.price ?? 0}</span>
+                    <div>
+                      <p className="mb-3 text-sm font-medium">Select a location</p>
+                      <div className="grid gap-2.5 sm:grid-cols-3">
+                        {BRANCHES.map((b) => (
+                          <button
+                            key={b}
+                            onClick={() => setBranch(b)}
+                            className={cn(
+                              "flex items-center gap-2 rounded-xl border p-3.5 text-left text-sm transition-all duration-200",
+                              branch === b
+                                ? "border-primary bg-primary/5 ring-1 ring-primary"
+                                : "border-border hover:border-primary/40 hover:bg-muted/50",
+                            )}
+                          >
+                            <MapPin className="size-4 text-primary" />
+                            {b}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
+                ) : step === 1 ? (
+                  <div className="flex flex-col gap-6">
+                    <div>
+                      <p className="mb-3 text-sm font-medium">Select a date</p>
+                      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2">
+                        {dates.map((d) => {
+                          const iso = toISODate(d)
+                          const active = iso === dateISO
+                          return (
+                            <button
+                              key={iso}
+                              onClick={() => {
+                                setDateISO(iso)
+                                setTime("")
+                              }}
+                              className={cn(
+                                "flex min-w-15 shrink-0 flex-col items-center rounded-xl border px-3 py-2.5 transition-all duration-200",
+                                active
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-border hover:border-primary/40 hover:bg-muted/50",
+                              )}
+                            >
+                              <span className="text-[0.65rem] tracking-wide uppercase opacity-80">
+                                {d.toLocaleDateString("en-US", { weekday: "short" })}
+                              </span>
+                              <span className="text-lg font-medium leading-tight">{d.getDate()}</span>
+                              <span className="text-[0.65rem] opacity-80">
+                                {d.toLocaleDateString("en-US", { month: "short" })}
+                              </span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="mb-3 flex items-center justify-between">
+                        <p className="text-sm font-medium">Available times</p>
+                        {loadingSlots && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
+                      </div>
+                      {!dateISO ? (
+                        <p className="text-sm text-muted-foreground">Please select a date first.</p>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                          {TIME_SLOTS.map((slot) => {
+                            const taken = bookedSlots.includes(slot)
+                            const past = parseSlotToDate(dateISO, slot).getTime() < now.getTime()
+                            const disabled = taken || past
+                            const active = time === slot
+                            return (
+                              <button
+                                key={slot}
+                                disabled={disabled}
+                                onClick={() => setTime(slot)}
+                                className={cn(
+                                  "rounded-lg border py-2.5 text-sm transition-all duration-200",
+                                  active
+                                    ? "border-primary bg-primary text-primary-foreground"
+                                    : "border-border hover:border-primary/40 hover:bg-muted/50",
+                                  disabled &&
+                                  "cursor-not-allowed border-transparent bg-muted/40 text-muted-foreground/40 line-through hover:border-transparent hover:bg-muted/40",
+                                )}
+                              >
+                                {slot}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    <Field label="Full name">
+                      <input
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Isabella Moreau"
+                        className="input-luxe"
+                      />
+                    </Field>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="Email">
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="you@email.com"
+                          className="input-luxe"
+                        />
+                      </Field>
+                      <Field label="Phone">
+                        <input
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="+1 (555) 000-0000"
+                          className="input-luxe"
+                        />
+                      </Field>
+                    </div>
+                    <Field label="Notes (optional)">
+                      <textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        rows={3}
+                        placeholder="Anything we should know before your visit?"
+                        className="input-luxe resize-none"
+                      />
+                    </Field>
+                    <div className="mt-1 rounded-xl border border-border bg-muted/40 p-4 text-sm">
+                      <Row label="Service" value={item?.name ?? ""} />
+                      <Row label="Location" value={branch} />
+                      <Row label="Date" value={formatLong(dateISO)} />
+                      <Row label="Time" value={time} />
+                      <div className="mt-2 flex items-center justify-between border-t border-border pt-2 font-medium">
+                        <span>Total</span>
+                        <span className="text-primary">${item?.price ?? 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-            {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+                {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           {/* Footer */}
@@ -462,6 +477,5 @@ function Row({ label, value }: { label: string; value: string }) {
 
 function formatLong(iso: string) {
   if (!iso) return ""
-  const d = new Date(`${iso}T00:00:00`)
-  return d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
+  return formatInTimeZone(`${iso}T12:00:00Z`, CLINIC_TZ, "EEEE, MMMM d")
 }

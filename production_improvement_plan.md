@@ -38,21 +38,21 @@ This document outlines the strategic upgrade path to transition the Med Spa appl
 ## 2. Design & UX Enhancements
 
 ### A. Fluid Motion Engine
-- [ ] Install `framer-motion` to elevate the UI aesthetic.
-- [ ] Add `<AnimatePresence>` to the `BookingDialog` to ensure horizontal step transitions are silky smooth.
-- [ ] Implement viewport-triggered, staggered entry animations for the Homepage Hero and Treatment Cards.
-- [ ] Polish micro-interactions (e.g., 300ms cubic-bezier eases on hover states).
+- [x] Install `framer-motion` to elevate the UI aesthetic.
+- [x] Add `<AnimatePresence>` to the `BookingDialog` to ensure horizontal step transitions are silky smooth.
+- [x] Implement viewport-triggered, staggered entry animations for the Homepage Hero and Treatment Cards.
+- [x] Polish micro-interactions (e.g., 300ms cubic-bezier eases on hover states).
 
 ### B. Dynamic CMS Integration
-- [ ] Choose and initialize a Headless CMS environment (e.g., Sanity.io or Contentful).
-- [ ] Define the Content Schema for Treatments, Pricing Packages, and Branch Locations.
+- [x] Choose and initialize a Headless CMS environment (e.g., Sanity.io or Contentful).
+- [x] Define the Content Schema for Treatments, Pricing Packages, and Branch Locations.
 - [ ] Replace hardcoded arrays (`PRICING_CATALOG` in `lib/constants.ts`) with dynamic API fetches from the CMS.
 - [ ] Verify the CMS preview mode works for local development.
 
 ### C. Calendar & Timezone Handling
-- [ ] Install robust timezone libraries (e.g., `date-fns-tz`).
-- [ ] Overhaul existing Date parsing logic in the booking flow. Ensure all data is saved to the database in strict `UTC`.
-- [ ] Lock the frontend UI to display timeslots exclusively in the clinic's local timezone (e.g., `America/New_York`), preventing travel-based timezone offset bugs.
+- [x] Install robust timezone libraries (e.g., `date-fns-tz`).
+- [x] Overhaul existing Date parsing logic in the booking flow. Ensure all data is saved to the database in strict `UTC`.
+- [x] Lock the frontend UI to display timeslots exclusively in the clinic's local timezone (e.g., `America/New_York`), preventing travel-based timezone offset bugs.
 
 ### D. Core Web Vitals & Asset Optimization
 - [ ] Audit `app/layout.tsx` to ensure fonts (`Playfair Display`, `Inter`) are properly locally cached via `next/font/google`.
